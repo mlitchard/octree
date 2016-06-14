@@ -111,8 +111,10 @@ containsMBB (MBB minimums maximums) (MBB minimums' maximums') =
 
 intersectMBB :: MBB -> MBB -> Maybe MBB
 intersectMBB (MBB minimums maximums) (MBB minimums' maximums') 
-  | maxx'' <= minx'' && maxy'' <= miny'' && maxz'' <= minz'' = Just $ MBB minVect maxVect
-  | otherwise                                                = Nothing
+  | maxx'' <= minx'' && 
+    maxy'' <= miny'' && 
+    maxz'' <= minz''    = Just $ MBB minVect maxVect
+  | otherwise           = Nothing
   where
     maxx'' = max maxx maxx'
     maxy'' = max maxy maxy'
@@ -134,7 +136,35 @@ intersectMBB (MBB minimums maximums) (MBB minimums' maximums')
     minz' = v3z minimums'
     minVect = Vector3 minx'' miny'' minz''
     maxVect = Vector3 maxx'' maxy'' maxz''
-    
+
+-- checks to see if a cube's center point is contained within an MBB    
+centerInMBB :: MBB -> Vector3 ->  Bool
+centerInMBB (MBB minimums maximums) vect1 =
+  (minx <= x && miny <= y && minz <= z) &&
+  (maxx >= x && maxy >= y && maxz >= z)
+  where
+    x = v3z vect1
+    y = v3y vect1
+    z = v3x vect1
+    minx  = v3x minimums
+    miny  = v3y minimums
+    minz  = v3z minimums
+    maxx  = v3x maximums
+    maxy  = v3y maximums
+    maxz  = v3z maximums
+
+-- Checks to see if two points are contained inside the same MBB
+boxed :: MBB -> Vector3 -> Vector3 -> Bool
+boxed mbb vect1 vect2 =
+  centerInMBB mbb vect1 && centerInMBB mbb vect2
+
+-- Calculates MBB, given an Integer and a Vector
+-- calcMBB :: (Num a) => a -> Vector3-> MBB
+-- calcMBB bound vect3 =
+--  (MBB minV maxV)
+--  where
+--    minV = vect3 - bound
+--    maxV = vect3 + bound
 
 
 
