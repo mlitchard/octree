@@ -28,7 +28,7 @@ Library
    build-depends:    base>=4.0 && < 4.10, AC-Vector >= 2.3.0, QuickCheck >= 2.4.0, random == 1.1, random-shuffle -any
    exposed-modules:  Data.Octree
    other-modules:    Data.Octree.Internal
-                     Data.Octree.MBB
+                     Data.Octree.BoundingBox
    exposed:          True
    extensions:       ScopedTypeVariables
 

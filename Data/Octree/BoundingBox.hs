@@ -11,13 +11,13 @@
  
 -}
 
-module Data.Octree.MBB
+module Data.Octree.BoundingBox
 
 (
-    isValidMBB,
-    centerInMBB,
+    isBBox,
+    inBBox,
     boxed,
-    explicateMBB,
+    explicateBBox,
 ) where
 
 import Data.List
@@ -28,12 +28,12 @@ import Data.Vector.V3
 import Data.Vector.Class
 
 -- | the property, that a 'MBB' must hold
-isValidMBB :: BBox3 -> Bool
-isValidMBB (BBox3 minX minY minZ maxX maxY maxZ) = 
+isBBox :: BBox3 -> Bool
+isBBox (BBox3 minX minY minZ maxX maxY maxZ) = 
   (minX < maxX) && (minY < maxY) && (minZ < maxZ)
 --      
-centerInMBB :: BBox3 -> Vector3 ->  Bool
-centerInMBB (BBox3 minX minY minZ maxX maxY maxZ) vect1 =
+inBBox :: BBox3 -> Vector3 ->  Bool
+inBBox (BBox3 minX minY minZ maxX maxY maxZ) vect1 =
   (minX <= x && minY <= y && minZ <= z) &&
   (maxX >= x && maxY >= y && maxZ >= z)
   where
@@ -44,23 +44,23 @@ centerInMBB (BBox3 minX minY minZ maxX maxY maxZ) vect1 =
 -- | Checks to see if two points are contained inside the same MBB
 boxed :: BBox3 -> Vector3 -> Vector3 -> Bool
 boxed bbox3 vect1 vect2 =
-  centerInMBB bbox3 vect1 && centerInMBB bbox3 vect2
+  inBBox bbox3 vect1 && inBBox bbox3 vect2
 
 -- | Makes explicit the implicit bounding boxes of each Node
 -- Initial input is root bounding box, Octree pair.
-explicateMBB :: (BBox3, Octree a) -> [BBox3]
-explicateMBB (mbb, (Leaf _)) = [mbb]
-explicateMBB (mbb, (Node { split = split',
-                          nwu   = nwu',
-                          nwd   = nwd',
-                          neu   = neu',
-                          ned   = ned',
-                          swu   = swu',
-                          swd   = swd',
-                          seu   = seu',
-                          sed   = sed'
+explicateBBox :: (BBox3, Octree a) -> [BBox3]
+explicateBBox (mbb, (Leaf _)) = [mbb]
+explicateBBox (mbb, (Node { split = split',
+                             nwu   = nwu',
+                             nwd   = nwd',
+                             neu   = neu',
+                             ned   = ned',
+                             swu   = swu',
+                             swd   = swd',
+                             seu   = seu',
+                             sed   = sed'
                  })) =
-   mbb:concatMap explicateMBB octList 
+   mbb:concatMap explicateBBox octList 
   where 
     octList = zip boxList children
     boxList = [swdBox, sedBox, nwdBox, nedBox, swuBox, seuBox, nwuBox, neuBox]
@@ -72,7 +72,7 @@ explicateMBB (mbb, (Node { split = split',
     sedBox = bound_corners swdCorner neuCorner
       where
         swdCorner = Vector3 (v3x split') (minY mbb) (minZ mbb)
-        neuCorner = Vector3 (maxX mbb) (v3y split') (minZ mbb)
+        neuCorner = Vector3 (maxX mbb) (v3y split') (v3z split')
     nwdBox = bound_corners swdCorner neuCorner 
       where
         swdCorner = Vector3 (minX mbb) (v3y split') (minZ mbb)
