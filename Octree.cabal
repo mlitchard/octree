@@ -33,7 +33,8 @@ Library
                      random-shuffle -any
    exposed-modules:  Data.Octree
    other-modules:    Data.Octree.Internal
-                     Data.Octree.BoundingBox
+                     Data.Octree.BoundingBox.BoundingBox
+                     Data.Octree.BoundingBox.Internal
    exposed:          True
    extensions:       ScopedTypeVariables
 

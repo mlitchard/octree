@@ -1,5 +1,5 @@
 {- |
-  Module     : Data.Octree.MBB
+  Module     : Data.Octree.BoundingBox.BoundingBox
   Copyright  : Copyright (c) 2016 Michael Litchard
   License    : MIT
 
@@ -11,24 +11,24 @@
  
 -}
 
-module Data.Octree.BoundingBox
-
-(
-    isBBox,
+module Data.Octree.BoundingBox.BoundingBox
+  ( isBBox,
     inBBox,
     boxed,
     explicateBBox,
-) where
+    boundedPoints
+  ) where
 
 import Data.List
 import Safe
 import Data.BoundingBox.B3 hiding (within_bounds,min_point)
 import Data.BoundingBox.Range hiding (bound_corners) 
 import Data.Traversable
-import Data.Octree.Internal
 import Data.Vector.V3 
 import Data.Vector.Class
 
+import Data.Octree.Internal
+import Data.Octree.BoundingBox.Internal
 
 data OutOfBounds = High | Low deriving Show
                    
@@ -51,11 +51,22 @@ boxed :: BBox3 -> Vector3 -> Vector3 -> Bool
 boxed bbox3 vect1 vect2 =
   inBBox bbox3 vect1 && inBBox bbox3 vect2
 
+-- | Wrapper for explicateBBox'
+-- removes initial bounding box
+-- in the event there exists more than
+-- the initially supplied bounding box
+explicateBBox :: BBox3 -> Octree a -> [BBox3]
+explicateBBox rbb octree =
+  let (head:rest) = explicateBBox' (rbb,octree)
+  in case (null rest) of
+       True -> [head]
+       False -> rest
+
 -- | Makes explicit the implicit bounding boxes of each Node
 -- Initial input is root bounding box, Octree pair.
-explicateBBox :: (BBox3, Octree a) -> [BBox3]
-explicateBBox (mbb, (Leaf _)) = [mbb]
-explicateBBox (mbb, (Node { split = split',
+explicateBBox' :: (BBox3, Octree a) -> [BBox3]
+explicateBBox' (mbb, (Leaf _)) = [mbb]
+explicateBBox' (mbb, (Node { split = split',
                              nwu   = nwu',
                              nwd   = nwd',
                              neu   = neu',
@@ -65,7 +76,7 @@ explicateBBox (mbb, (Node { split = split',
                              seu   = seu',
                              sed   = sed'
                  })) =
-   mbb:concatMap explicateBBox octList 
+  mbb:concatMap explicateBBox' octList 
   where 
     octList = zip boxList children
     boxList = [swdBox, sedBox, nwdBox, nedBox, swuBox, seuBox, nwuBox, neuBox]
@@ -103,8 +114,8 @@ explicateBBox (mbb, (Node { split = split',
         swdCorner = Vector3 (v3x split') (v3y split') (v3z split')
         neuCorner = Vector3 (maxX mbb) (maxY mbb) (maxZ mbb)
 
-boundedPoints :: (BBox3, Octree a) -> [Vector3]
-boundedPoints (_, (Leaf vects)) = map fst vects
+boundedPoints :: (BBox3, Octree a) -> [(Vector3,a)]
+boundedPoints (_, (Leaf vects)) = vects
 boundedPoints (mbb, (Node { split = split',
                              nwu   = nwu',
                              nwd   = nwd',
@@ -118,69 +129,13 @@ boundedPoints (mbb, (Node { split = split',
   let 
       tagged_nodes = zip allOctants children
       children     = [swd',sed',nwd',ned',swu',seu',nwu',neu']
-      sDir  = (xfilter . yfilter . zfilter) allOctants
+      sDir  = (xfilter' . yfilter' . zfilter') allOctants
       nodes = map (toNode tagged_nodes) sDir
   in concatMap boundedPoints $ map ((,) mbb) nodes
   where
-    x_west  = [NWD,NWU,SWD,SWU]
-    x_east  = [NED,NEU,SED,SEU]
-    y_north = [NWU,NWD,NEU,NED]
-    y_south = [SWU,SWD,SEU,SED]
-    z_up    = [NWU,SWU,NEU,SEU]
-    z_down  = [NWD,SWD,NED,SED]
-
-    xfilter, yfilter, zfilter :: [ODir] -> [ODir]
-    xfilter octants = 
-      case rangeRelationX of
-        Nothing   -> octants
-        Just High -> filter (flip notElem x_east) octants
-        Just Low  -> filter (flip notElem x_west) octants
- 
-    yfilter octants =
-      case rangeRelationY of
-        Nothing   -> octants
-        Just High -> filter (flip notElem y_south) octants
-        Just Low  -> filter (flip notElem y_north) octants
-
-    zfilter octants =
-      case rangeRelationZ of
-        Nothing   -> octants
-        Just High -> filter (flip notElem z_down) octants
-        Just Low  -> filter (flip notElem z_up) octants
-
-    rangeRelationX, rangeRelationY, rangeRelationZ :: Maybe OutOfBounds
-    rangeRelationX = 
-      let rx         = rangeX mbb
-          splitx     = v3x split'
-          min_point' = min_point rx
-      in case (within_bounds splitx rx) of
-           True  -> Nothing
-           False -> 
-             case (splitx < min_point') of
-               True ->  Just Low
-               False -> Just High
-    rangeRelationY =
-      let ry         = rangeY mbb
-          splity     = v3y split'
-          min_point' = min_point ry
-      in case (within_bounds splity ry) of
-           True  -> Nothing
-           False -> 
-             case (splity < min_point') of
-               True  -> Just Low
-               False -> Just High
-    rangeRelationZ =
-      let rz = rangeZ mbb 
-          splitz = v3z split'
-          min_point' = min_point rz
-      in case (within_bounds splitz rz) of
-           True  -> Nothing
-           False -> 
-             case (splitz < min_point') of
-               True  -> Just Low
-               False -> Just High
-
-    taggedChildren = zip allOctants [swd',sed',nwd',ned',swu',seu',nwu',neu']
+    xfilter' = xfilter mbb split'
+    yfilter' = yfilter mbb split'
+    zfilter' = zfilter mbb split'
 
 toNode :: [(ODir,Octree a)] -> ODir -> Octree a
 toNode nodes odir =
@@ -188,10 +143,3 @@ toNode nodes odir =
   where
     failure =
       "Impossible happened - toNode failed to find " ++ (show odir) ++ " .\n"
-      
-              
-
-
-
-
-
