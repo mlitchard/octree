@@ -21,12 +21,15 @@ module Data.Octree.BoundingBox
 ) where
 
 import Data.List
-import Data.BoundingBox.B3
+import Data.BoundingBox.B3 hiding (within_bounds,min_point)
+import Data.BoundingBox.Range hiding (bound_corners) 
 import Data.Traversable
 import Data.Octree.Internal
 import Data.Vector.V3 
 import Data.Vector.Class
 
+data OutOfBounds = High | Low deriving Show
+                   
 -- | the property, that a 'MBB' must hold
 isBBox :: BBox3 -> Bool
 isBBox (BBox3 minX minY minZ maxX maxY maxZ) = 
@@ -97,3 +100,74 @@ explicateBBox (mbb, (Node { split = split',
       where
         swdCorner = Vector3 (v3x split') (v3y split') (v3z split')
         neuCorner = Vector3 (maxX mbb) (maxY mbb) (maxZ mbb)
+
+boundedPoints :: (BBox3, Octree a) -> [Vector3]
+boundedPoints (_, (Leaf vects)) = map fst vects
+boundedPoints (mbb, (Node { split = split',
+                             nwu   = nwu',
+                             nwd   = nwd',
+                             neu   = neu',
+                             ned   = ned',
+                             swu   = swu',
+                             swd   = swd',
+                             seu   = seu',
+                             sed   = sed'
+                 })) = 
+  let x_west  = [NWD,NWU,SWD,SWU]
+      x_east  = [NED,NEU,SED,SEU]
+      y_north = [NWU,NWD,NEU,NED]
+      y_south = [SWU,SWD,SEU,SED]
+      z_up    = [NWU,SWU,NEU,SEU]
+      z_down  = [NWD,SWD,NED,SED]
+      tagged_nodes = zip allOctants children
+      children     = [swd',sed',nwd',ned',swu',seu',nwu',neu']
+      sDir  = (xfilter . yfilter . zfilter) allOctants
+      nodes = map (toNode tagged_nodes) sDir
+  in concatMap boundedPoints $ map ((,) mbb) nodes
+  where
+    xfilter, yfilter, zfilter :: [ODir] -> [ODir]
+    xfilter = undefined
+    yfilter = undefined
+    zfilter = undefined
+    toNode :: [(ODir,Octree a)] -> ODir -> [Octree a]
+    toNode = undefined
+    rangeRelationX, rangeRelationY, rangeRelationZ :: Maybe OutOfBounds
+    rangeRelationX = 
+      let rx         = rangeX mbb
+          splitx     = v3x split'
+          min_point' = min_point rx
+      in case (within_bounds splitx rx) of
+           True  -> Nothing
+           False -> 
+             case (splitx < min_point') of
+               True ->  Just Low
+               False -> Just High
+    rangeRelationY =
+      let ry         = rangeY mbb
+          splity     = v3y split'
+          min_point' = min_point ry
+      in case (within_bounds splity ry) of
+           True  -> Nothing
+           False -> 
+             case (splity < min_point') of
+               True  -> Just Low
+               False -> Just High
+    rangeRelationZ =
+      let rz = rangeZ mbb 
+          splitz = v3z split'
+          min_point' = min_point rz
+      in case (within_bounds splitz rz) of
+           True  -> Nothing
+           False -> 
+             case (splitz < min_point') of
+               True  -> Just Low
+               False -> Just High
+       
+
+      
+
+    taggedChildren = zip allOctants [swd,sed,nwd,ned,swu,seu,nwu,neu]
+
+
+
+
