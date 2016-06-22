@@ -21,12 +21,14 @@ module Data.Octree.BoundingBox
 ) where
 
 import Data.List
+import Safe
 import Data.BoundingBox.B3 hiding (within_bounds,min_point)
 import Data.BoundingBox.Range hiding (bound_corners) 
 import Data.Traversable
 import Data.Octree.Internal
 import Data.Vector.V3 
 import Data.Vector.Class
+
 
 data OutOfBounds = High | Low deriving Show
                    
@@ -113,24 +115,39 @@ boundedPoints (mbb, (Node { split = split',
                              seu   = seu',
                              sed   = sed'
                  })) = 
-  let x_west  = [NWD,NWU,SWD,SWU]
-      x_east  = [NED,NEU,SED,SEU]
-      y_north = [NWU,NWD,NEU,NED]
-      y_south = [SWU,SWD,SEU,SED]
-      z_up    = [NWU,SWU,NEU,SEU]
-      z_down  = [NWD,SWD,NED,SED]
+  let 
       tagged_nodes = zip allOctants children
       children     = [swd',sed',nwd',ned',swu',seu',nwu',neu']
       sDir  = (xfilter . yfilter . zfilter) allOctants
       nodes = map (toNode tagged_nodes) sDir
   in concatMap boundedPoints $ map ((,) mbb) nodes
   where
+    x_west  = [NWD,NWU,SWD,SWU]
+    x_east  = [NED,NEU,SED,SEU]
+    y_north = [NWU,NWD,NEU,NED]
+    y_south = [SWU,SWD,SEU,SED]
+    z_up    = [NWU,SWU,NEU,SEU]
+    z_down  = [NWD,SWD,NED,SED]
+
     xfilter, yfilter, zfilter :: [ODir] -> [ODir]
-    xfilter = undefined
-    yfilter = undefined
-    zfilter = undefined
-    toNode :: [(ODir,Octree a)] -> ODir -> [Octree a]
-    toNode = undefined
+    xfilter octants = 
+      case rangeRelationX of
+        Nothing   -> octants
+        Just High -> filter (flip notElem x_east) octants
+        Just Low  -> filter (flip notElem x_west) octants
+ 
+    yfilter octants =
+      case rangeRelationY of
+        Nothing   -> octants
+        Just High -> filter (flip notElem y_south) octants
+        Just Low  -> filter (flip notElem y_north) octants
+
+    zfilter octants =
+      case rangeRelationZ of
+        Nothing   -> octants
+        Just High -> filter (flip notElem z_down) octants
+        Just Low  -> filter (flip notElem z_up) octants
+
     rangeRelationX, rangeRelationY, rangeRelationZ :: Maybe OutOfBounds
     rangeRelationX = 
       let rx         = rangeX mbb
@@ -162,11 +179,18 @@ boundedPoints (mbb, (Node { split = split',
              case (splitz < min_point') of
                True  -> Just Low
                False -> Just High
-       
 
+    taggedChildren = zip allOctants [swd',sed',nwd',ned',swu',seu',nwu',neu']
+
+toNode :: [(ODir,Octree a)] -> ODir -> Octree a
+toNode nodes odir =
+  lookupJustNote failure odir nodes
+  where
+    failure =
+      "Impossible happened - toNode failed to find " ++ (show odir) ++ " .\n"
       
+              
 
-    taggedChildren = zip allOctants [swd,sed,nwd,ned,swu,seu,nwu,neu]
 
 
 
