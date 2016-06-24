@@ -37,7 +37,7 @@ data BBoxConfig x y a = BBoxConfig {
 }
 traverseOctreeBB :: BBoxConfig x y a -> BBox3 -> Octree a -> x -> y
 traverseOctreeBB bbc bbx (Leaf objects) input =
-  leaf' bbx input objects 
+  map (leaf' bbx input objects 
   where
     leaf' = leaf bbc   
 traverseOctreeBB 
