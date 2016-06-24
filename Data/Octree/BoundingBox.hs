@@ -28,20 +28,44 @@ import Data.Octree.Internal
 
 data BBoxConfig x y a = BBoxConfig {
 -- | A function to recurse down the Octree
-  select  :: (BBox3 -> x -> x),
+  select  :: (BBox3 -> x -> Maybe x),
 -- | A function to pre-condition the leaves
   leaf    :: (BBox3 -> x -> (Vector3, a) -> y),
 -- | A function to recurse back up the tree
   combine :: (x -> [y] -> y) 
 
 }
+
+type DefInput       =  Vector3
+type LeafValue a    = (Vector3, a)
+type DefOutput      = (BBox3,[(Vector3)])
+type DefNodeValue a = (a -> a)
+
+defBBoxConfig :: BBoxConfig DefInput DefOutput (DefNodeValue a)
+defBBoxConfig = BBoxConfig {
+  select  = filterNodes ,
+  leaf    = points,
+  combine = result
+}
+
+filterNodes :: BBox3 -> DefInput -> Maybe (DefInput)
+filterNodes bbox id' = undefined
+
+points :: BBox3 -> DefInput -> LeafValue (a -> a) -> DefOutput
+points bbox3 octree = undefined
+
+result :: DefInput -> [DefOutput] -> DefOutput
+result = undefined
 traverseOctreeBB :: BBoxConfig x y a -> BBox3 -> Octree a -> x -> y
-traverseOctreeBB bbc bbx (Leaf objects) input =
-  map (leaf' bbx input objects 
+traverseOctreeBB bbc bbx (Leaf objects) input = undefined
+--  map (leaf' bbx input objects 
   where
     leaf' = leaf bbc   
 traverseOctreeBB 
   bbc bbx (Node split' nwu' nwd' neu' ned' swu' swd' seu' sed') x = undefined
+--  let res = map 
+--    case (select' ) of
+       
 --  where
 --    swdBox = bound_corners swdCorner neuCorner
 --      where
