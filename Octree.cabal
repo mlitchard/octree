@@ -33,10 +33,10 @@ Library
                      random-shuffle -any
    exposed-modules:  Data.Octree
    other-modules:    Data.Octree.Internal
-                     Data.Octree.BoundingBox.BoundingBox
-                     Data.Octree.BoundingBox.Internal
+                     Data.Octree.BoundingBox
    exposed:          True
    extensions:       ScopedTypeVariables
+                     Rank2Types
 
 Test-suite test_Octree
   Type:              exitcode-stdio-1.0

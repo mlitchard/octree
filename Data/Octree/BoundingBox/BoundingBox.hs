@@ -125,7 +125,7 @@ boundedPoints (mbb, (Node { split = split',
                              swd   = swd',
                              seu   = seu',
                              sed   = sed'
-                 })) = 
+              })) = 
   let 
       tagged_nodes = zip allOctants children
       children     = [swd',sed',nwd',ned',swu',seu',nwu',neu']
