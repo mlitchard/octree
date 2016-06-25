@@ -18,8 +18,8 @@ module Data.Octree.BoundingBox
 
 import Data.List
 import Safe
-import Data.BoundingBox.B3 hiding (within_bounds,min_point)
-import Data.BoundingBox.Range hiding (bound_corners)
+import Data.BoundingBox.B3 
+import qualified Data.BoundingBox.Range as R
 import Data.Traversable
 import Data.Vector.V3
 import Data.Vector.Class
@@ -38,7 +38,7 @@ data BBoxConfig x y a = BBoxConfig {
 
 type DefInput       =  Vector3
 type LeafValue a    = (Vector3, a)
-type DefOutput      = (BBox3,[(Vector3)])
+type DefOutput      = (BBox3, Vector3)
 type DefNodeValue a = (a -> a)
 
 defBBoxConfig :: BBoxConfig DefInput DefOutput (DefNodeValue a)
@@ -49,13 +49,27 @@ defBBoxConfig = BBoxConfig {
 }
 
 filterNodes :: BBox3 -> DefInput -> Maybe (DefInput)
-filterNodes bbox id' = undefined
+filterNodes bbox x =
+  case (within_bounds x bbox) of
+    True  -> Just x
+    False -> Nothing 
 
 points :: BBox3 -> DefInput -> LeafValue (a -> a) -> DefOutput
-points bbox3 octree = undefined
+points box _ (point,_) = (box,point)
+   
 
 result :: DefInput -> [DefOutput] -> DefOutput
-result = undefined
+result _ out =
+  let dedup = nub out
+   
+-- | Supplied boolean test for result function
+-- | Returns True if Box a is contained within Box b
+inclusive :: DefOutput -> DefOutput -> Bool
+inclusive (b1,_) (b2,_) =
+  case (isect b1 b2) of
+    Just b3 -> b1 == b3
+    Nothing -> False
+      
 traverseOctreeBB :: BBoxConfig x y a -> BBox3 -> Octree a -> x -> y
 traverseOctreeBB bbc bbx (Leaf objects) input = undefined
 --  map (leaf' bbx input objects 
