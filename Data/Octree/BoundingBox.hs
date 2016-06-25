@@ -28,24 +28,24 @@ import Data.Octree.Internal
 
 data BBoxConfig x y a = BBoxConfig {
 -- | A function to recurse down the Octree
-  select  :: (BBox3 -> x -> Maybe x),
+  select   :: (BBox3 -> x -> Maybe x),
 -- | A function to pre-condition the leaves
-  leaf    :: (BBox3 -> x -> (Vector3, a) -> y),
+  procLeaf :: (BBox3 -> x -> [LeafValue a] -> y),
 -- | A function to recurse back up the tree
-  combine :: (x -> [y] -> y) 
+  combine  :: (x -> [y] -> y) 
 
 }
 
 type DefInput       =  Vector3
 type LeafValue a    = (Vector3, a)
-type DefOutput      = (BBox3, Vector3)
+type DefOutput a     = (BBox3, [LeafValue (DefNodeValue a)])
 type DefNodeValue a = (a -> a)
 
-defBBoxConfig :: BBoxConfig DefInput DefOutput (DefNodeValue a)
+defBBoxConfig :: BBoxConfig DefInput (DefOutput a) (DefNodeValue a)
 defBBoxConfig = BBoxConfig {
-  select  = filterNodes ,
-  leaf    = points,
-  combine = result
+  select   = filterNodes ,
+  procLeaf = points,
+  combine  = result
 }
 
 filterNodes :: BBox3 -> DefInput -> Maybe (DefInput)
@@ -54,27 +54,35 @@ filterNodes bbox x =
     True  -> Just x
     False -> Nothing 
 
-points :: BBox3 -> DefInput -> LeafValue (a -> a) -> DefOutput
-points box _ (point,_) = (box,point)
+points :: BBox3 -> DefInput -> [LeafValue (DefNodeValue a)] -> DefOutput a
+points box x leaf = (box, leaf)
    
-
-result :: DefInput -> [DefOutput] -> DefOutput
-result _ out =
-  let dedup = nub out
+-- | result reduces the list of all BBoxes containing the point to
+-- the terminal BBox
+result :: DefInput -> [DefOutput a] -> DefOutput a
+result _ (x:xs) =
+  foldl' findTerminal x xs
+  where
+    findTerminal :: DefOutput a -> DefOutput a -> DefOutput a
+    findTerminal bbox1@(bbox1',_) bbox2@(bbox2',_)
+      | (inclusive bbox1' bbox2') == True = bbox1
+      | otherwise                         = bbox2
+      
    
 -- | Supplied boolean test for result function
--- | Returns True if Box a is contained within Box b
-inclusive :: DefOutput -> DefOutput -> Bool
-inclusive (b1,_) (b2,_) =
+-- | Returns True if Box b1 is contained within Box b2
+inclusive :: BBox3 -> BBox3 -> Bool
+inclusive b1 b2 =
   case (isect b1 b2) of
     Just b3 -> b1 == b3
     Nothing -> False
       
 traverseOctreeBB :: BBoxConfig x y a -> BBox3 -> Octree a -> x -> y
-traverseOctreeBB bbc bbx (Leaf objects) input = undefined
---  map (leaf' bbx input objects 
+traverseOctreeBB bbc bbx (Leaf leaf_vals) input = 
+   procLeaf' bbx input leaf_vals
   where
-    leaf' = leaf bbc   
+    procLeaf' = procLeaf bbc   
+
 traverseOctreeBB 
   bbc bbx (Node split' nwu' nwd' neu' ned' swu' swd' seu' sed') x = undefined
 --  let res = map 
