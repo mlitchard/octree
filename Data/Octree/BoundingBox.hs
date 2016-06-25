@@ -18,6 +18,7 @@ module Data.Octree.BoundingBox
 
 import Data.List
 import Safe
+import Data.Maybe
 import Data.BoundingBox.B3 
 import qualified Data.BoundingBox.Range as R
 import Data.Traversable
@@ -32,8 +33,7 @@ data BBoxConfig x y a = BBoxConfig {
 -- | A function to pre-condition the leaves
   procLeaf :: (BBox3 -> x -> [LeafValue a] -> y),
 -- | A function to recurse back up the tree
-  combine  :: (x -> [y] -> y) 
-
+  combine  :: (x -> [y] -> y)
 }
 
 type DefInput       =  Vector3
@@ -59,7 +59,7 @@ points box x leaf = (box, leaf)
    
 -- | result reduces the list of all BBoxes containing the point to
 -- the terminal BBox
-result :: DefInput -> [DefOutput a] -> DefOutput a
+result :: x -> [DefOutput a] -> DefOutput a
 result _ (x:xs) =
   foldl' findTerminal x xs
   where
@@ -84,44 +84,50 @@ traverseOctreeBB bbc bbx (Leaf leaf_vals) input =
     procLeaf' = procLeaf bbc   
 
 traverseOctreeBB 
-  bbc bbx (Node split' nwu' nwd' neu' ned' swu' swd' seu' sed') x = undefined
---  let res = map 
---    case (select' ) of
-       
---  where
---    swdBox = bound_corners swdCorner neuCorner
---      where
---        swdCorner = Vector3 (minX bbx) (minY bbx) (minZ bbx)
---        neuCorner = Vector3 (v3x split') (v3y split') (v3z split')
---    sedBox = bound_corners swdCorner neuCorner
---      where
---        swdCorner = Vector3 (v3x split') (minY bbx) (minZ bbx)
---        neuCorner = Vector3 (maxX bbx) (v3y split') (v3z split')
---    nwdBox = bound_corners swdCorner neuCorner
---      where
---        swdCorner = Vector3 (minX bbx) (v3y split') (minZ bbx)
---        neuCorner = Vector3 (v3x split') (maxY bbx) (v3z split')
---    nedBox = bound_corners swdCorner neuCorner
---      where
---        swdCorner = Vector3 (v3x split') (v3y split') (minZ bbx)
---        neuCorner = Vector3 (maxX bbx) (maxY bbx) (v3z split')
---    swuBox = bound_corners swdCorner neuCorner
---      where
---        swdCorner = Vector3 (minX bbx) (minY bbx) (v3z split')
---        neuCorner = Vector3 (v3x split') (v3y split') (maxZ bbx)
---    seuBox = bound_corners swdCorner neuCorner
---      where
---        swdCorner = Vector3 (v3x split') (minY bbx) (v3z split')
---        neuCorner = Vector3 (maxX bbx) (v3y split') (maxZ bbx)
---    nwuBox = bound_corners swdCorner neuCorner
---      where
---        swdCorner = Vector3 (minX bbx) (v3y split') (v3z split')
---        neuCorner = Vector3 (v3x split') (maxY bbx) (maxZ bbx)
---    neuBox = bound_corners swdCorner neuCorner
---      where
---        swdCorner = Vector3 (v3x split') (v3y split') (v3z split')
---        neuCorner = Vector3 (maxX bbx) (maxY bbx) (maxZ bbx)
+  bbc bbx (Node split' nwu' nwd' neu' ned' swu' swd' seu' sed') x = 
+  let res = mapMaybe traverseOctreeBB' octList
+  in combine' x res            
+  where
+    combine' = combine bbc 
+    select'  = select bbc
 
+    traverseOctreeBB' (subbox, subtree) =
+      case (select' subbox x) of
+        Just x' -> Just (traverseOctreeBB bbc subbox subtree x)
+        Nothing -> Nothing 
 
-      
-  
+    octList = zip boxList children
+    boxList = [swdBox, sedBox, nwdBox, nedBox, swuBox, seuBox, nwuBox, neuBox]
+    children = [swd',sed',nwd',ned',swu',seu',nwu',neu']
+    swdBox = bound_corners swdCorner neuCorner
+      where
+        swdCorner = Vector3 (minX bbx) (minY bbx) (minZ bbx)
+        neuCorner = Vector3 (v3x split') (v3y split') (v3z split')
+    sedBox = bound_corners swdCorner neuCorner
+      where
+        swdCorner = Vector3 (v3x split') (minY bbx) (minZ bbx)
+        neuCorner = Vector3 (maxX bbx) (v3y split') (v3z split')
+    nwdBox = bound_corners swdCorner neuCorner
+      where
+        swdCorner = Vector3 (minX bbx) (v3y split') (minZ bbx)
+        neuCorner = Vector3 (v3x split') (maxY bbx) (v3z split')
+    nedBox = bound_corners swdCorner neuCorner
+      where
+        swdCorner = Vector3 (v3x split') (v3y split') (minZ bbx)
+        neuCorner = Vector3 (maxX bbx) (maxY bbx) (v3z split')
+    swuBox = bound_corners swdCorner neuCorner
+      where
+        swdCorner = Vector3 (minX bbx) (minY bbx) (v3z split')
+        neuCorner = Vector3 (v3x split') (v3y split') (maxZ bbx)
+    seuBox = bound_corners swdCorner neuCorner
+      where
+        swdCorner = Vector3 (v3x split') (minY bbx) (v3z split')
+        neuCorner = Vector3 (maxX bbx) (v3y split') (maxZ bbx)
+    nwuBox = bound_corners swdCorner neuCorner
+      where
+        swdCorner = Vector3 (minX bbx) (v3y split') (v3z split')
+        neuCorner = Vector3 (v3x split') (maxY bbx) (maxZ bbx)
+    neuBox = bound_corners swdCorner neuCorner
+      where
+        swdCorner = Vector3 (v3x split') (v3y split') (v3z split')
+        neuCorner = Vector3 (maxX bbx) (maxY bbx) (maxZ bbx)
