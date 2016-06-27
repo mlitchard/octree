@@ -28,9 +28,7 @@ Library
    build-depends:    base >=4.0 && < 4.10,
                      AC-Vector >= 2.3.0,
                      QuickCheck >= 2.4.0,
-                     random == 1.1,
-                     safe   == 0.3.9,
-                     random-shuffle -any
+                     safe   == 0.3.9
    exposed-modules:  Data.Octree
    other-modules:    Data.Octree.Internal
                      Data.Octree.BoundingBox.BoundingBox
@@ -41,10 +39,15 @@ Library
 
 Test-suite test_Octree
   Type:              exitcode-stdio-1.0
-  Build-depends:     base >=4.0 && < 4.10,
+  build-depends:     base >=4.0 && < 4.10,
                      AC-Vector >= 2.3.0,
-                     QuickCheck >= 2.4.0
-  Main-is:           tests/test_Octree.hs
+                     QuickCheck >= 2.4.0,
+                     random == 1.1,
+                     random-shuffle
+
+  hs-source-dirs:    tests                   
+  Main-is:           Main.hs
+  other-modules:     PropTests.Octree
 
 Test-suite readme
   type:           exitcode-stdio-1.0
