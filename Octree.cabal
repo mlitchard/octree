@@ -25,21 +25,34 @@ source-repository head
   location: git@github.com:mgajda/octree.git
 
 Library
-   build-depends:    base>=4.0 && < 4.10, AC-Vector >= 2.3.0, QuickCheck >= 2.4.0
+   build-depends:    base >=4.0 && < 4.10,
+                     AC-Vector >= 2.3.0,
+                     QuickCheck >= 2.4.0,
+                     random == 1.1,
+                     safe   == 0.3.9,
+                     random-shuffle -any
    exposed-modules:  Data.Octree
    other-modules:    Data.Octree.Internal
+                     Data.Octree.BoundingBox.BoundingBox
+                     Data.Octree.BoundingBox.Internal
    exposed:          True
    extensions:       ScopedTypeVariables
+                     FlexibleInstances
 
 Test-suite test_Octree
   Type:              exitcode-stdio-1.0
-  Build-depends:     base>=4.0 && < 4.10, AC-Vector >= 2.3.0, QuickCheck >= 2.8.0
+  Build-depends:     base >=4.0 && < 4.10,
+                     AC-Vector >= 2.3.0,
+                     QuickCheck >= 2.4.0
   Main-is:           tests/test_Octree.hs
 
 Test-suite readme
   type:           exitcode-stdio-1.0
   -- We have a symlink: README.lhs -> README.md
   main-is:        README.lhs
-  Build-depends:  base>=4.0 && < 4.10, AC-Vector >= 2.3.0, QuickCheck >= 2.4.0, markdown-unlit
+  Build-depends:  base >=4.0 && < 4.10,
+                  AC-Vector >= 2.3.0,
+                  QuickCheck >= 2.4.0,
+                  markdown-unlit
   ghc-options:    -pgmL markdown-unlit
 
