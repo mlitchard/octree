@@ -7,87 +7,126 @@
   Stability  : experimental
   Portability: not portable
   
-  This module provides functions for Data.Octree.BoundingBox.BoundingBox
+  This module provides functions etc, for Data.Octree.BoundingBox.BoundingBox
 
+  -- | DefInput, LeafValue a, DefOutput a, DefNodeValue a 
+         Default types for BBoxConfig
+
+  -- | filterNodes, points, result
+         Default functions for BBoxConfig
+
+  -- | inclusive
+         boolean check for one BBox3 being inclusive of another
 -}
 
 module Data.Octree.BoundingBox.Internal
-  (
-    xfilter,
-    yfilter,
-    zfilter
+  ( filterNodes
+  , points
+  , result
+  , DefInput
+  , LeafValue 
+  , DefOutput 
+  , DefNodeValue
+  , newBBox3 
   ) where
 
 import Data.Vector.V3
-import Data.BoundingBox.Range hiding (bound_corners)
-import Data.BoundingBox.B3 hiding (within_bounds,min_point)
+import Data.BoundingBox.Range hiding (within_bounds,isect,bound_corners)
+import Data.BoundingBox.B3 
 
 import Data.Octree.Internal
+import Data.List
 
-data OutOfBounds = High | Low deriving Show
+type DefInput       =  Vector3
+type Split          = Vector3
+type LeafValue a    = (Vector3, a)
+type DefOutput a    = (BBox3, [LeafValue (DefNodeValue a)])
+type DefNodeValue a = (a -> a)
 
-xfilter, yfilter, zfilter :: BBox3 -> Vector3 -> [ODir] -> [ODir]
+-- |  newBBox3 creates a smaller BBox3
+--    Given Node name, previous BBox3, and the split
+newBBox3 :: BBox3 -> Vector3 -> ODir -> BBox3
+newBBox3 bbx split' SWD =
+  bound_corners swdCorner neuCorner
+    where
+      swdCorner = Vector3 (minX bbx) (minY bbx) (minZ bbx)
+      neuCorner = Vector3 (v3x split') (v3y split') (v3z split')
 
-xfilter mbb split octants =
-  case (rangeRelationX mbb split) of
-    Nothing   -> octants
-    Just High -> filter (flip notElem x_east) octants
-    Just Low  -> filter (flip notElem x_west) octants
-  where
-    x_west  = [NWD,NWU,SWD,SWU]
-    x_east  = [NED,NEU,SED,SEU]
+newBBox3 bbx split' SED =
+  bound_corners swdCorner neuCorner
+    where
+      swdCorner = Vector3 (v3x split') (minY bbx) (minZ bbx)
+      neuCorner = Vector3 (maxX bbx) (v3y split') (v3z split')
 
-yfilter mbb split octants =
-  case (rangeRelationY mbb split) of
-    Nothing   -> octants
-    Just High -> filter (flip notElem y_south) octants
-    Just Low  -> filter (flip notElem y_north) octants
-  where
-    y_north = [NWU,NWD,NEU,NED]
-    y_south = [SWU,SWD,SEU,SED]
- 
-zfilter mbb split octants =
-  case (rangeRelationZ mbb split) of
-    Nothing   -> octants
-    Just High -> filter (flip notElem z_down) octants
-    Just Low  -> filter (flip notElem z_up) octants
-  where
-    z_up    = [NWU,SWU,NEU,SEU]
-    z_down  = [NWD,SWD,NED,SED]
- 
-rangeRelationX, rangeRelationY, rangeRelationZ :: BBox3   -> 
-                                                  Vector3 -> 
-                                                  Maybe OutOfBounds
-   
-rangeRelationX mbb split =
-  let rx     = rangeX mbb
-      splitx = v3x split
-      min_point' = min_point rx
-  in case (within_bounds splitx rx) of
-       True  -> Nothing
-       False ->
-         case (min_point' < splitx) of
-           True ->  Just Low
-           False -> Just High   
+newBBox3 bbx split' NWD =
+  bound_corners swdCorner neuCorner
+    where
+      swdCorner = Vector3 (minX bbx) (v3y split') (minZ bbx)
+      neuCorner = Vector3 (v3x split') (maxY bbx) (v3z split')
 
-rangeRelationY mbb split =
-  let ry         = rangeY mbb
-      splity     = v3y split
-      min_point' = min_point ry
-  in case (within_bounds splity ry) of
-       True  -> Nothing
-       False ->
-         case (min_point' < splity) of
-           True  -> Just Low
-           False -> Just High 
+newBBox3 bbx split' NED =
+  bound_corners swdCorner neuCorner
+    where
+      swdCorner = Vector3 (v3x split') (v3y split') (minZ bbx)
+      neuCorner = Vector3 (maxX bbx) (maxY bbx) (v3z split')
 
-rangeRelationZ mbb split =
-  let rz = rangeZ mbb
-      splitz = v3z split
-      min_point' = min_point rz
-  in case (within_bounds splitz rz) of
-       True  -> Nothing
-       False ->
-         case (min_point' < splitz) of
-           True  -> Just Low
-           False -> Just High 
+newBBox3 bbx split' SWU =
+  bound_corners swdCorner neuCorner
+    where
+      swdCorner = Vector3 (minX bbx) (minY bbx) (v3z split')
+      neuCorner = Vector3 (v3x split') (v3y split') (maxZ bbx)
+
+newBBox3 bbx split' SEU =
+  bound_corners swdCorner neuCorner
+    where
+      swdCorner = Vector3 (v3x split') (minY bbx) (v3z split')
+      neuCorner = Vector3 (maxX bbx) (v3y split') (maxZ bbx)
+
+newBBox3 bbx split' NWU =
+  bound_corners swdCorner neuCorner
+    where
+      swdCorner = Vector3 (minX bbx) (v3y split') (v3z split')
+      neuCorner = Vector3 (v3x split') (maxY bbx) (maxZ bbx)
+
+newBBox3 bbx split' NEU =
+  bound_corners swdCorner neuCorner
+    where
+      swdCorner = Vector3 (v3x split') (v3y split') (v3z split')
+      neuCorner = Vector3 (maxX bbx) (maxY bbx) (maxZ bbx)
+
+-- | filterNodes is default function for BBoxConfig 
+--   used to recurse down octree identifying which BBox3s contain DefInput
+filterNodes :: BBox3 -> DefInput -> Maybe (DefInput)
+filterNodes bbox x =
+  case (within_bounds x bbox) of
+    True  -> Just x
+    False -> Nothing
+
+-- | points is default function for BBoxConfig
+-- pre-processes Leaf
+points :: BBox3 -> DefInput -> [LeafValue (DefNodeValue a)] -> DefOutput a
+points box x leaf = (box, leaf)
+
+-- | result reduces the list of all BBoxes containing the point to
+--   the terminal BBox
+result :: x -> [DefOutput a] -> DefOutput a
+result _ (x:xs) =
+  foldl' findTerminal x xs
+    where
+      findTerminal :: DefOutput a -> DefOutput a -> DefOutput a
+      findTerminal bbox1@(bbox1',_) bbox2@(bbox2',_)
+        | (inclusive bbox1' bbox2') == True = bbox1
+        | otherwise                         = bbox2
+
+-- | Supplied boolean test for result function
+--   Returns True if Box b1 is contained within Box b2
+inclusive :: BBox3 -> BBox3 -> Bool
+inclusive b1 b2 =
+  case (isect b1 b2) of
+    Just b3 -> b1 == b3
+    Nothing -> False
+
+
+-- | Testing only
+instance Show (a -> a) where
+  show _ = "(a -> a)"
