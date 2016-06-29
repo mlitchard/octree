@@ -18,7 +18,7 @@ module Data.Octree.BoundingBox.BoundingBox
   ) where
 
 import Data.List
-import Safe
+-- import Safe
 import Data.Maybe
 import Data.BoundingBox.B3 
 import qualified Data.BoundingBox.Range as R
@@ -40,7 +40,7 @@ data BBoxConfig x y a = BBoxConfig {
 }
 
 -- | defBBoxConfig - default BBoxConfig
-defBBoxConfig :: BBoxConfig DefInput (DefOutput a) (DefNodeValue a)
+defBBoxConfig :: BBoxConfig DefInput DefOutput DefNodeValue
 defBBoxConfig = BBoxConfig {
   select   = filterNodes ,
   procLeaf = points,

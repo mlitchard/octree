@@ -40,8 +40,8 @@ import Data.List
 type DefInput       =  Vector3
 type Split          = Vector3
 type LeafValue a    = (Vector3, a)
-type DefOutput a    = (BBox3, [LeafValue (DefNodeValue a)])
-type DefNodeValue a = (a -> a)
+type DefOutput      = (BBox3, [LeafValue DefNodeValue ])
+type DefNodeValue   = Int
 
 -- |  newBBox3 creates a smaller BBox3
 --    Given Node name, previous BBox3, and the split
@@ -96,7 +96,7 @@ newBBox3 bbx split' NEU =
 
 -- | filterNodes is default function for BBoxConfig 
 --   used to recurse down octree identifying which BBox3s contain DefInput
-filterNodes :: BBox3 -> DefInput -> Maybe (DefInput)
+filterNodes :: BBox3 -> DefInput -> Maybe DefInput
 filterNodes bbox x =
   case (within_bounds x bbox) of
     True  -> Just x
@@ -104,16 +104,16 @@ filterNodes bbox x =
 
 -- | points is default function for BBoxConfig
 -- pre-processes Leaf
-points :: BBox3 -> DefInput -> [LeafValue (DefNodeValue a)] -> DefOutput a
-points box x leaf = (box, leaf)
+points :: BBox3 -> DefInput -> [LeafValue DefNodeValue ] -> DefOutput
+points box _ leaf = (box, leaf)
 
 -- | result reduces the list of all BBoxes containing the point to
 --   the terminal BBox
-result :: x -> [DefOutput a] -> DefOutput a
+result :: DefInput -> [DefOutput ] -> DefOutput 
 result _ (x:xs) =
   foldl' findTerminal x xs
     where
-      findTerminal :: DefOutput a -> DefOutput a -> DefOutput a
+      findTerminal :: DefOutput -> DefOutput -> DefOutput
       findTerminal bbox1@(bbox1',_) bbox2@(bbox2',_)
         | (inclusive bbox1' bbox2') == True = bbox1
         | otherwise                         = bbox2
@@ -125,8 +125,3 @@ inclusive b1 b2 =
   case (isect b1 b2) of
     Just b3 -> b1 == b3
     Nothing -> False
-
-
--- | Testing only
-instance Show (a -> a) where
-  show _ = "(a -> a)"
