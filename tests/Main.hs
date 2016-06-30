@@ -8,8 +8,11 @@
 import Test.Hspec (hspec)
 
 import PropTests.Octree
+import PropTests.BoundingBoxTests.BoundingBoxTests
 
 main :: IO ()
 main = do
   hspec propOctExposed
-  hspec propOctInternal 
+  hspec propValidateBoxes 
+  hspec propMatchValuesToBoxes
+  hspec propOctInternal

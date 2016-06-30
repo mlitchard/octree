@@ -17,16 +17,10 @@ module Data.Octree.BoundingBox.BoundingBox
   , defBBoxConfig
   ) where
 
-import Data.List
--- import Safe
-import Data.Maybe
-import Data.BoundingBox.B3 
-import qualified Data.BoundingBox.Range as R
-import Data.Traversable
-import Data.Vector.V3
-import Data.Vector.Class
+import Data.Maybe (mapMaybe)
+import Data.BoundingBox.B3 (BBox3)
 
-import Data.Octree.Internal
+import Data.Octree.Internal (Octree (..), allOctants)
 import Data.Octree.BoundingBox.Internal
 
 -- | BBoxConfig - The functions traverseOctreeBB needs
@@ -55,7 +49,7 @@ traverseOctreeBB bbc bbx (Leaf leaf_vals) input =
   where
     procLeaf' = procLeaf bbc   
 
--- | General framework to traverse an Octree
+-- | General framework to traverse an Octree in terms of a BBox3
 traverseOctreeBB 
   bbc bbx (Node split' nwu' nwd' neu' ned' swu' swd' seu' sed') x = 
   let res = mapMaybe traverseOctreeBB' octList

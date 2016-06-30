@@ -1,5 +1,5 @@
 {- |
-  Module : PropTests.BoundingBoxTests.External
+  Module : PropTests.BoundingBoxTests.Utilities
   Copyright  : Copyright (c) 2016 Michael Litchard
   License    : MIT
 
@@ -7,29 +7,29 @@
   Stability  : experimental
   Portability: not portable
   
-  This module provides property tests for BoundingBox.hs
+  This module provides utility functions for
+  PropTests.BoundingBoxTests.External.hs
 
 -}
 
-module PropTests.BoundingBoxTests.External
+module PropTests.BoundingBoxTests.Utilities
   ( bbis
   , isBBox
-  , listLeaves
-  , octree
   , testConfig1
+  , testConfig2
+  , AltInput
   ) where
 
 
-import Data.List
-import Data.Maybe 
-import Data.Vector.Class 
-import System.Random 
-import System.Random.Shuffle 
-import Data.BoundingBox.B3
+import Data.BoundingBox.B3 (BBox3 (..),bound_corners)
 
 import Data.Octree.Internal hiding (lookup)
-import Data.Octree.BoundingBox.BoundingBox
-import Data.Octree.BoundingBox.Internal
+import Data.Octree.BoundingBox.BoundingBox (BBoxConfig (..))
+import Data.Octree.BoundingBox.Internal ( DefInput
+                                        , DefOutput
+                                        , LeafValue
+                                        , DefNodeValue
+                                        , inclusive)
 -- | Bounding Box of Infinite Space
 --   The root Bounding Box
 bbis :: BBox3
@@ -43,30 +43,14 @@ isBBox :: BBox3 -> Bool
 isBBox (BBox3 minX minY minZ maxX maxY maxZ) =
   (minX < maxX) && (minY < maxY) && (minZ < maxZ)
 
-octree :: Integer -> IO (Octree Int)
-octree bound = do
-  xGen <- newStdGen
-  yGen <- newStdGen
-  zGen <- newStdGen
-  let xPoints :: [Double]
-      yPoints :: [Double]
-      zPoints :: [Double]
-      xPoints = map fromInteger $ shuffle' pointList (length pointList) xGen
-      yPoints = map fromInteger $ shuffle' pointList (length pointList) yGen
-      zPoints = map fromInteger $ shuffle' pointList (length pointList) zGen
-      ub = bound `div` 2 
-      lb = - (bound `div` 2) 
-      pointList = [lb .. ub] 
-      sizePL = length pointList
-      vectors = map (\(x,y,z) -> Vector3 x y z) $ zip3 xPoints yPoints zPoints
-  return $ fromList $ zip vectors $ [1 .. sizePL]
 
 testConfig1 :: BBoxConfig DefInput [DefOutput] DefNodeValue
 testConfig1 = BBoxConfig {
   select   = allPoints,
   procLeaf = allBoxesAndKeys,
   combine  = assemble
-}     
+}
+     
 allBoxesAndKeys :: BBox3                     -> 
                    DefInput                  -> 
                    [LeafValue DefNodeValue ] -> 
@@ -77,20 +61,29 @@ allPoints :: BBox3 -> DefInput -> Maybe (DefInput)
 allPoints bbx x = Just x
 
 assemble :: DefInput -> [[DefOutput]] -> [DefOutput]
-assemble _ x = concat x
+assemble _ ys = concat ys
 
 type AltInput = BBox3
 
+testConfig2 :: BBoxConfig AltInput DefOutput DefNodeValue
+testConfig2 = BBoxConfig {
+  select   = filterBoxes,
+  procLeaf = checkbox,
+  combine  = boxResult
+}
 
 filterBoxes :: BBox3 -> AltInput -> Maybe AltInput
 filterBoxes genBox origBox =
-  case (within_bounds origBox genBox) of
+  case (inclusive origBox genBox) of
     True  -> Just origBox
     False -> Nothing
 
 checkbox :: BBox3 -> AltInput -> [LeafValue DefNodeValue ] -> DefOutput
 checkbox genBox _ leaf = (genBox, leaf)
 
-boxResult :: DefInput -> [DefOutput] -> DefOutput
+boxResult :: AltInput -> [DefOutput] -> DefOutput
 boxResult origBox allOuts =
-  fromMaybe (bbis,[] :: [(Vector3,a)]) $ lookup origBox allOuts         
+  maybe bogusDummy ((,) origBox) $ lookup origBox allOuts
+  where
+    bogusDummy :: DefOutput
+    bogusDummy = (bbis,[])         

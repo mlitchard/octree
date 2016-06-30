@@ -1,3 +1,16 @@
+{- |
+   Module     : PropTests.OctreeTests.Internal
+   Copyright  : Copyright (c) 2016 Michal J. Gajda
+   License    : see LICENSE file
+ 
+   Maintainer : Michael Litchard, Michal J. Gajda
+   Stability  : experimental
+   Portability: not portable
+                            
+   This module provides tests for internal helper functions:
+                                                 
+-}
+
 {-# LANGUAGE ScopedTypeVariables #-}
 module PropTests.OctreeTests.Internal
   ( prop_depth
@@ -20,7 +33,6 @@ import Data.Octree.Internal
 import Data.Octree() -- test that interface module is not broken
 
 import PropTests.Common
--- | These are tests for internal helper functions:
 
 -- for easier testing
 origin :: Vector3

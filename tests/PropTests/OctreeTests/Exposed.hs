@@ -1,3 +1,16 @@
+{- |
+   Module     : PropTests.OctreeTests.Exposed
+   Copyright  : Copyright (c) 2016 Michal J. Gajda
+   License    : see LICENSE file
+ 
+   Maintainer : Michael Litchard, Michal J. Gajda
+   Stability  : experimental
+   Portability: not portable
+                            
+   This module provides the property tests for exposed octree functions.
+-}
+
+
 {-# LANGUAGE ScopedTypeVariables #-}
 module PropTests.OctreeTests.Exposed
   ( prop_lookup
@@ -16,15 +29,12 @@ module PropTests.OctreeTests.Exposed
 import Prelude hiding(lookup)
 import Data.List(sort, sortBy)
 
-import Test.QuickCheck.Arbitrary
-
 import Data.Vector.Class
 import Control.Arrow(second)
 
 import Data.Octree.Internal
 import Data.Octree() -- test that interface module is not broken
 import PropTests.Common
--- | These are tests for exposed functions:
 
 prop_lookup :: [(Vector3, Int)] -> Bool
 prop_lookup l = all isIn l
@@ -32,16 +42,18 @@ prop_lookup l = all isIn l
         isIn x = lookup ot (fst x) == Just x
 
 prop_fromToList :: [(Vector3, Int)] -> Bool
-prop_fromToList         l = sort l == (sort . toList . fromList $ l)
+prop_fromToList l = sort l == (sort . toList . fromList $ l)
 
 prop_insertionPreserved :: [(Vector3, Int)] -> Bool
-prop_insertionPreserved l = sort l == (sort . toList . foldr insert (Leaf []) $ l)
+prop_insertionPreserved l = 
+  sort l == (sort . toList . foldr insert (Leaf []) $ l)
 
 prop_nearest :: [(Vector3, Int)] -> Vector3 -> Bool
-prop_nearest            l pt = nearest (fromList l) pt == naiveNearest pt l
+prop_nearest l pt = 
+  nearest (fromList l) pt == naiveNearest pt l
 
 
-prop_naiveWithinRange   r l pt = naiveWithinRange r pt l == (sort . map fst . (\o -> withinRange o r pt) . fromList . tuplify pt $ l)
+prop_naiveWithinRange r l pt = naiveWithinRange r pt l == (sort . map fst . (\o -> withinRange o r pt) . fromList . tuplify pt $ l)
 
 tuplify pt = map (\a -> (a, dist pt a))
 
@@ -67,14 +79,10 @@ genericProperty_fmap f l = (sort . map (Control.Arrow.second f) $ l) == (sort . 
 prop_depth_empty = depth (Leaf []) == 0
 
 prop_depth_upper_bound :: [(Vector3, Int)] -> Bool
-prop_depth_upper_bound l = depth ot <= max 0 (ceiling . logBase 2 . realToFrac $ size) -- worst splitting ratio possible when we take midpoint (and inputs are colinear)
+prop_depth_upper_bound l = 
+  depth ot <= max 0 (ceiling . logBase 2 . realToFrac $ size) -- worst splitting ratio possible when we take midpoint (and inputs are colinear)
   where ot   = fromList l
         size = length l
 
 prop_size :: [(Vector3, Int)] -> Bool
 prop_size l = size (fromList l) == length l
-
---return []
-
--- main = $quickCheckAll
-

@@ -1,4 +1,17 @@
+{- |
+   Module     : PropTests.Octree
+   Copyright  : Copyright (c) 2016 Michael Litchard
+   License    : MIT
+ 
+   Maintainer : Michael Litchard, Michal J. Gajda
+   Stability  : experimental
+   Portability: not portable
+                           
+   This module organizes the property tests for Octree proper. 
+-}                                                
+
 {-# LANGUAGE ScopedTypeVariables #-}
+
 module PropTests.Octree 
   ( propOctInternal
   , propOctExposed)
@@ -9,14 +22,8 @@ import Data.Octree() -- test that interface module is not broken
 import Prelude hiding(lookup)
 import Data.List(sort, sortBy)
 
-import Test.Hspec
-import Test.QuickCheck
-import Test.Hspec.QuickCheck
-import Test.QuickCheck.All(quickCheckAll)
-import Test.QuickCheck.Arbitrary
-
-import Data.Vector.Class
-import Control.Arrow(second)
+import Test.Hspec (Spec, describe)
+import Test.Hspec.QuickCheck (prop)
 
 import PropTests.OctreeTests.Internal
 import PropTests.OctreeTests.Exposed
@@ -25,19 +32,19 @@ propOctInternal :: Spec
 propOctInternal = do
   describe "Tests for internal helper functions" $ do
     prop "depth" $ prop_depth 
-    prop "prop_cmp1" $ property $ prop_cmp1
-    prop "prop_cmp2" $ property $ prop_cmp2
-    prop "prop_stepDescription" $ property $ prop_stepDescription
+    prop "prop_cmp1" $ prop_cmp1
+    prop "prop_cmp2" $ prop_cmp2
+    prop "prop_stepDescription" $ prop_stepDescription
     prop "prop_octantDistanceNoGreaterThanInterpointDistance0" $
-       property $ prop_octantDistanceNoGreaterThanInterpointDistance0
+      prop_octantDistanceNoGreaterThanInterpointDistance0
     prop "prop_octantDistanceNoGreaterThanInterpointDistance" $
-       property $ prop_octantDistanceNoGreaterThanInterpointDistance
+      prop_octantDistanceNoGreaterThanInterpointDistance
     prop "prop_octantDistanceNoGreaterThanInterpointDistanceZero" $
-       property $ prop_octantDistanceNoGreaterThanInterpointDistanceZero
+      prop_octantDistanceNoGreaterThanInterpointDistanceZero
     prop "prop_octantDistanceNoGreaterThanCentroidDistance" $
-       property $ prop_octantDistanceNoGreaterThanCentroidDistance
+      prop_octantDistanceNoGreaterThanCentroidDistance
     prop "prop_pickClosest" $
-       property (prop_pickClosest :: [(Vector3, Int)] -> Vector3 -> Bool)
+       (prop_pickClosest :: [(Vector3, Int)] -> Vector3 -> Bool)
 
 propOctExposed :: Spec
 propOctExposed = do

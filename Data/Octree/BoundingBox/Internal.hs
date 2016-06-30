@@ -27,17 +27,16 @@ module Data.Octree.BoundingBox.Internal
   , LeafValue 
   , DefOutput 
   , DefNodeValue
-  , newBBox3 
+  , newBBox3
+  , inclusive 
   ) where
 
-import Data.Vector.V3
-import Data.BoundingBox.Range hiding (within_bounds,isect,bound_corners)
-import Data.BoundingBox.B3 
+import Data.BoundingBox.B3 (BBox3 (..), bound_corners, within_bounds, isect)
 
-import Data.Octree.Internal
-import Data.List
+import Data.Octree.Internal (Vector3 (..), ODir (..)) 
+import Data.List (foldl')
 
-type DefInput       =  Vector3
+type DefInput       = Vector3
 type Split          = Vector3
 type LeafValue a    = (Vector3, a)
 type DefOutput      = (BBox3, [LeafValue DefNodeValue ])
@@ -45,7 +44,7 @@ type DefNodeValue   = Int
 
 -- |  newBBox3 creates a smaller BBox3
 --    Given Node name, previous BBox3, and the split
-newBBox3 :: BBox3 -> Vector3 -> ODir -> BBox3
+newBBox3 :: BBox3 -> Split -> ODir -> BBox3
 newBBox3 bbx split' SWD =
   bound_corners swdCorner neuCorner
     where
