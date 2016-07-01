@@ -30,4 +30,4 @@ script:
   - git --version
   - stack --version
   - stack +RTS -N2 -RTS test
-
+  - echo "All done."
