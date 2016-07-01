@@ -2,7 +2,7 @@ octree
 ======
 This is a simple Octree implementation in Haskell.
 
-[![Build Status](https://api.travis-ci.org/mlitchard/octree.png?branch=test-reorg)](https://www.travis-ci.org/BioHaskell/octree)
+[![Build Status](https://api.travis-ci.org/mlitchard/octree.png?branch=test-reorg)](https://www.travis-ci.org/mlitchard/octree)
 
 To use simply:
 
