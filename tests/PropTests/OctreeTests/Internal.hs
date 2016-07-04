@@ -1,7 +1,7 @@
 {- |
    Module     : PropTests.OctreeTests.Internal
    Copyright  : Copyright (c) 2016 Michal J. Gajda
-   License    : see LICENSE file
+   License    : BSD3
  
    Maintainer : Michael Litchard, Michal J. Gajda
    Stability  : experimental

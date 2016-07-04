@@ -1,7 +1,7 @@
 {- |
   Module     : Data.Octree.BoundingBox.Internal
   Copyright  : Copyright (c) 2016 Michael Litchard
-  License    : MIT
+  License    : BSD3
 
   Maintainer : Michael Litchard, Michal J. Gajda
   Stability  : experimental
